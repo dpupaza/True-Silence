@@ -34,23 +34,30 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.os.Bundle;
 import android.os.IBinder;
 //import android.util.Log;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import com.panic.R;
 import com.panic.widgets.SilenceWidget;
 
 public class SilenceService extends Service {
-    //TODO Have status icon reappear on reboot.. must write a boot broadcast listener
-	//TODO Try and automatically turn off true silence when a third party interferes with streams
-	//TODO Provide an activity so that the user can see an icon even if they don't understand widgets
+    
 	final static private String PREFS_NAME = "SilencePrefs";
 
 	@Override
 	public void onStart(Intent intent, int startId) {
+		Log.i("tsilence", "service");
 		
+		boolean fromBoot=false;
 		boolean isSilent = getSilenceState(this);
+		
+		Bundle extras = intent.getExtras();
+		if(extras != null && extras.containsKey("boot")){
+			fromBoot=extras.getBoolean("boot");
+		}
 		
 		int[] streamIds = {AudioManager.STREAM_VOICE_CALL, 
 							AudioManager.STREAM_SYSTEM, 
@@ -64,12 +71,15 @@ public class SilenceService extends Service {
 		int[] widgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(this, SilenceWidget.class));
 		
 		RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.silence_widget_layout);
+		if(fromBoot){
+			isSilent = !isSilent;
+		}
 		setSilenceState(this, views, !isSilent);
 		appWidgetManager.updateAppWidget(widgetIds, views);
 		
 		AudioManager am = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
 		for(int id : streamIds){
-			if(!isSilent){
+			if(!isSilent){Log.i("tsilence", "on");
 				setStreamPref(this, id, am.getStreamVolume(id));
 			 	am.setStreamVolume(id,0,AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
 			 	//Notification On
@@ -79,7 +89,7 @@ public class SilenceService extends Service {
 				PendingIntent pi = PendingIntent.getService(this, 0, new Intent(this,SilenceService.class), PendingIntent.FLAG_UPDATE_CURRENT);
 				notif.setLatestEventInfo(this, "True Silence", "All volume levels are 0, click here to restore levels", pi);
 				nm.notify(1, notif);
-			}else{
+			}else{Log.i("tsilence", "off");
 				if(getStreamPref(this, id) != 0) //Fixes bug w/ linked streams
 					am.setStreamVolume(id,getStreamPref(this, id),AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
 				//Notification Off
