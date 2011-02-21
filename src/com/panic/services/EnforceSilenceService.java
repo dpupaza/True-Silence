@@ -22,24 +22,45 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-package com.panic.receivers;
+package com.panic.services;
 
-import android.content.BroadcastReceiver;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import com.panic.R;
+
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
+import android.content.SharedPreferences;
+import android.os.IBinder;
 
-import com.panic.services.SilenceService;
+public class EnforceSilenceService extends Service {
 
-/**
- * Simple receiver that will handle the boot completed intent and send the intent to 
- * launch SilentService
- */
-public class BootReceiver extends BroadcastReceiver {
- @Override
- public void onReceive(final Context context, final Intent bootintent) {
-	 Log.i("tsilence", "bootreceiver");
-	 Intent intent = new Intent(context, SilenceService.class);
-	 context.startService(intent);
- }
+	private static ScheduledExecutorService timer;
+	
+	public void onStart(Intent intent, int startId) {
+		super.onStart(intent, startId);
+		SharedPreferences prefs = getBaseContext().getSharedPreferences(getString(R.string.prefName), Context.MODE_PRIVATE);
+		timer = Executors.newScheduledThreadPool(2);
+		timer.scheduleAtFixedRate(new Runnable() {
+
+			public void run() {
+				 Intent intent = new Intent(getBaseContext(), SilenceService.class);
+				 getBaseContext().startService(intent);
+			}
+		}, 0, prefs.getInt("refresh_interval", 300), TimeUnit.SECONDS);
+	}
+
+	public void onDestroy(Intent intent, int startId) {
+		timer.shutdown();
+		super.onDestroy();
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		return null;
+	}
+
 }

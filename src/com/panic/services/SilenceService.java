@@ -44,22 +44,20 @@ import com.panic.R;
 import com.panic.widgets.SilenceWidget;
 
 public class SilenceService extends Service {
-    
-	final static private String PREFS_NAME = "SilencePrefs";
-
+	
 	@Override
 	public void onStart(Intent intent, int startId) {
 		Log.i("tsilence", "service");
 		
-		boolean fromBoot=false;
+		boolean swap=false;
 		boolean isSilent = getSilenceState(this);
 		
 		Bundle extras = intent.getExtras();
-		if(extras != null && extras.containsKey("boot")){
-			fromBoot=extras.getBoolean("boot");
+		if(extras != null && extras.containsKey("swap")){
+			swap=extras.getBoolean("swap");
 		}
 		
-		int[] streamIds = {AudioManager.STREAM_VOICE_CALL, 
+		int[] streamIds = {//AudioManager.STREAM_VOICE_CALL, 
 							AudioManager.STREAM_SYSTEM, 
 							AudioManager.STREAM_RING, 
 							AudioManager.STREAM_MUSIC,
@@ -71,10 +69,11 @@ public class SilenceService extends Service {
 		int[] widgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(this, SilenceWidget.class));
 		
 		RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.silence_widget_layout);
-		if(fromBoot){
+		if(swap){
+			Log.i("tsilence","swapping");
 			isSilent = !isSilent;
 		}
-		setSilenceState(this, views, !isSilent);
+		setSilenceState(this, views, isSilent);
 		appWidgetManager.updateAppWidget(widgetIds, views);
 		
 		AudioManager am = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
@@ -84,10 +83,12 @@ public class SilenceService extends Service {
 			 	am.setStreamVolume(id,0,AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
 			 	//Notification On
 			 	NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-				Notification notif = new Notification(R.drawable.sound_muted, "True Silence", System.currentTimeMillis());
+				Notification notif = new Notification(R.drawable.sound_muted, getString(R.string.app_name), System.currentTimeMillis());
 				notif.flags |= Notification.FLAG_ONGOING_EVENT;
-				PendingIntent pi = PendingIntent.getService(this, 0, new Intent(this,SilenceService.class), PendingIntent.FLAG_UPDATE_CURRENT);
-				notif.setLatestEventInfo(this, "True Silence", "All volume levels are 0, click here to restore levels", pi);
+				Intent notifIntent = new Intent(this,SilenceService.class);
+				notifIntent.putExtra("swap", true);
+				PendingIntent pi = PendingIntent.getService(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+				notif.setLatestEventInfo(this, getString(R.string.app_name), getString(R.string.notification_text), pi);
 				nm.notify(1, notif);
 			}else{Log.i("tsilence", "off");
 				if(getStreamPref(this, id) != 0) //Fixes bug w/ linked streams
@@ -103,38 +104,37 @@ public class SilenceService extends Service {
 	
 	@Override
 	public IBinder onBind(Intent intent) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	private void setStreamPref(Context context, int streamId, int streamVol){
-		SharedPreferences.Editor prefEdit = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit();
+		SharedPreferences.Editor prefEdit = context.getSharedPreferences(getString(R.string.prefName), Context.MODE_PRIVATE).edit();
 		prefEdit.putInt(new Integer(streamId).toString(), streamVol);
 		prefEdit.commit();
 	}
 	
 	private int getStreamPref(Context context, int streamId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = context.getSharedPreferences(getString(R.string.prefName), Context.MODE_PRIVATE);
         return prefs.getInt(new Integer(streamId).toString(),7);
     }
 	
-	private static void setSilenceState(Context context, RemoteViews views, boolean isSilent) {
-        SharedPreferences.Editor prefEdit = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit();
+	private void setSilenceState(Context context, RemoteViews views, boolean isSilent) {
+        SharedPreferences.Editor prefEdit = context.getSharedPreferences(getString(R.string.prefName), Context.MODE_PRIVATE).edit();
         prefEdit.putBoolean("silent", isSilent);
         prefEdit.commit();
         setSilenceIcon(context, views);
     }
 	
 	private static boolean getSilenceState(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = context.getSharedPreferences(context.getString(R.string.prefName), Context.MODE_PRIVATE);
         return prefs.getBoolean("silent",false);
     }
     
 	public static void setSilenceIcon(Context context, RemoteViews views){
 		if(getSilenceState(context)){
-			views.setImageViewResource(R.id.ImageView01, R.drawable.sound_off_icon);
+			views.setImageViewResource(R.id.ImageView01, R.drawable.sound_icon);
 	    }else{
-	    	views.setImageViewResource(R.id.ImageView01, R.drawable.sound_icon);
+	    	views.setImageViewResource(R.id.ImageView01, R.drawable.sound_off_icon);
 	    }
 	}
 	

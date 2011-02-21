@@ -25,6 +25,7 @@
 package com.panic.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
@@ -41,6 +42,10 @@ public class PlaceholderActivity extends Activity {
 		setContentView(R.layout.placeholder);
 	}
 
+	public void onSettingsClick(View v) {
+		startActivity(new Intent(v.getContext(), SettingsActivity.class));
+	}
+	
 	public void onCloseClick(View v) {
 		finish();
 	}

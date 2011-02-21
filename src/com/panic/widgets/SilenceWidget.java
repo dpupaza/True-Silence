@@ -45,6 +45,7 @@ public class SilenceWidget extends AppWidgetProvider {
             int appWidgetId = appWidgetIds[i];
    
             Intent intent = new Intent(context, SilenceService.class);
+            intent.putExtra("swap", true);
             PendingIntent pendingIntent = PendingIntent.getService(context, 0, intent, 0);
 
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.silence_widget_layout);       

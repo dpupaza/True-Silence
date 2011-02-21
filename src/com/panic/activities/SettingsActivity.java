@@ -22,24 +22,35 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-package com.panic.receivers;
+package com.panic.activities;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
+import android.os.Bundle;
+import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
+import android.preference.PreferenceActivity;
 
-import com.panic.services.SilenceService;
+import com.panic.R;
+import com.panic.services.EnforceSilenceService;
 
-/**
- * Simple receiver that will handle the boot completed intent and send the intent to 
- * launch SilentService
- */
-public class BootReceiver extends BroadcastReceiver {
- @Override
- public void onReceive(final Context context, final Intent bootintent) {
-	 Log.i("tsilence", "bootreceiver");
-	 Intent intent = new Intent(context, SilenceService.class);
-	 context.startService(intent);
- }
+public class SettingsActivity extends PreferenceActivity {
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		addPreferencesFromResource(R.xml.settings);
+		Preference refreshCheckbox = findPreference("silenceRefresh");
+		refreshCheckbox.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+					public boolean onPreferenceClick(Preference preference) {
+						boolean ps = preference.getSharedPreferences().getBoolean(preference.getKey(), false);
+						if (ps) {
+							startService(new Intent(getBaseContext(), EnforceSilenceService.class));
+						} else {
+							stopService(new Intent(getBaseContext(), EnforceSilenceService.class));
+						}
+						return true;
+					}
+				});
+	}
+
 }

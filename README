@@ -1,1 +1,5 @@
-Editing again because fork queue doesn't merge cleanly. I want to the manual process and cleanly apply this commit.
+A simple widget that lets you COMPLETELY silence your android phone. Many manufacturers do not allow this with all volume streams and many other applications will only let you set one at a time. True Silence is the only one tap solution to this problem! Tip: Great for use with camera apps that beep when a photo is taken!
+
+Please use git to report bugs and request features/enhancements. I will be updating soon!
+
+You may also feel free to submit patches, request to become a collaborator, or fork this project! Just be mindful of the MIT license.
