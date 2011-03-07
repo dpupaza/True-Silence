@@ -28,32 +28,34 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.panic.R;
-
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class EnforceSilenceService extends Service {
 
-	private static ScheduledExecutorService timer;
+	private ScheduledExecutorService timer;
 	
 	public void onStart(Intent intent, int startId) {
 		super.onStart(intent, startId);
-		SharedPreferences prefs = getBaseContext().getSharedPreferences(getString(R.string.prefName), Context.MODE_PRIVATE);
+		Log.i("tsilence", "enforce service started");
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		Integer timerPref = Integer.parseInt(prefs.getString("refreshRate", "600"));
 		timer = Executors.newScheduledThreadPool(2);
 		timer.scheduleAtFixedRate(new Runnable() {
-
 			public void run() {
 				 Intent intent = new Intent(getBaseContext(), SilenceService.class);
 				 getBaseContext().startService(intent);
 			}
-		}, 0, prefs.getInt("refresh_interval", 300), TimeUnit.SECONDS);
+		}, timerPref, timerPref, TimeUnit.SECONDS);
 	}
 
-	public void onDestroy(Intent intent, int startId) {
+	@Override
+	public void onDestroy() {
+		Log.i("tsilence", "enforce service destroyed");
 		timer.shutdown();
 		super.onDestroy();
 	}

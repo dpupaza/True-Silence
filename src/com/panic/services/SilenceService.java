@@ -36,7 +36,7 @@ import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.IBinder;
-//import android.util.Log;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
@@ -47,7 +47,7 @@ public class SilenceService extends Service {
 	
 	@Override
 	public void onStart(Intent intent, int startId) {
-		Log.i("tsilence", "service");
+		Log.i("tsilence", "Staring Silence Service");
 		
 		boolean swap=false;
 		boolean isSilent = getSilenceState(this);
@@ -70,16 +70,28 @@ public class SilenceService extends Service {
 		
 		RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.silence_widget_layout);
 		if(swap){
-			Log.i("tsilence","swapping");
+			Log.i("tsilence","Swapping Silent State");
 			isSilent = !isSilent;
 		}
+		
 		setSilenceState(this, views, isSilent);
 		appWidgetManager.updateAppWidget(widgetIds, views);
 		
 		AudioManager am = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
+		
+		if(!isSilent && swap){
+			SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+			if(prefs.getBoolean("silenceRefresh", false)){
+				startService(new Intent(this, EnforceSilenceService.class));
+			}
+		}
+		
 		for(int id : streamIds){
-			if(!isSilent){Log.i("tsilence", "on");
-				setStreamPref(this, id, am.getStreamVolume(id));
+			if(!isSilent){
+				if(swap){
+					setStreamPref(this, id, am.getStreamVolume(id));
+					//need to start service only when true silence is turning on
+				}
 			 	am.setStreamVolume(id,0,AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
 			 	//Notification On
 			 	NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -90,9 +102,12 @@ public class SilenceService extends Service {
 				PendingIntent pi = PendingIntent.getService(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 				notif.setLatestEventInfo(this, getString(R.string.app_name), getString(R.string.notification_text), pi);
 				nm.notify(1, notif);
-			}else{Log.i("tsilence", "off");
-				if(getStreamPref(this, id) != 0) //Fixes bug w/ linked streams
+			}else{
+				if(getStreamPref(this, id) != 0){ //Fixes bug w/ linked streams
 					am.setStreamVolume(id,getStreamPref(this, id),AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+				}
+				//Service off
+				stopService(new Intent(this, EnforceSilenceService.class));
 				//Notification Off
 				NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 				nm.cancel(1);

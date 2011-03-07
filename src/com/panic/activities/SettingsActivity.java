@@ -24,14 +24,10 @@
 
 package com.panic.activities;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.preference.Preference;
-import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 
 import com.panic.R;
-import com.panic.services.EnforceSilenceService;
 
 public class SettingsActivity extends PreferenceActivity {
 
@@ -39,18 +35,6 @@ public class SettingsActivity extends PreferenceActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.xml.settings);
-		Preference refreshCheckbox = findPreference("silenceRefresh");
-		refreshCheckbox.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-					public boolean onPreferenceClick(Preference preference) {
-						boolean ps = preference.getSharedPreferences().getBoolean(preference.getKey(), false);
-						if (ps) {
-							startService(new Intent(getBaseContext(), EnforceSilenceService.class));
-						} else {
-							stopService(new Intent(getBaseContext(), EnforceSilenceService.class));
-						}
-						return true;
-					}
-				});
 	}
 
 }
