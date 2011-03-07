@@ -68,6 +68,9 @@ public class SilenceService extends Service {
 		AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
 		int[] widgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(this, SilenceWidget.class));
 		
+		Intent reIntent = new Intent(this, SilenceService.class);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0, reIntent, 0);
+		
 		RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.silence_widget_layout);
 		if(swap){
 			Log.i("tsilence","Swapping Silent State");
@@ -75,6 +78,7 @@ public class SilenceService extends Service {
 		}
 		
 		setSilenceState(this, views, isSilent);
+		views.setOnClickPendingIntent(R.id.silence_layout, pendingIntent);
 		appWidgetManager.updateAppWidget(widgetIds, views);
 		
 		AudioManager am = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
